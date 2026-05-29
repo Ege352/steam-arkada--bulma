@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steam Friend Finder - BladeKensei Ultimate v2</title>
+    <!-- Tailwind CSS ve FontAwesome ikonları -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .neon-border-admin {
+            box-shadow: 0 0 15px rgba(147, 51, 234, 0.2);
+            border: 1px solid rgba(147, 51, 234, 0.4);
+        }
+        @keyframes rgb-shimmer {
+            0% { color: #ff0000; text-shadow: 0 0 8px #ff0000; }
+            33% { color: #00ff00; text-shadow: 0 0 8px #00ff00; }
+            66% { color: #0000ff; text-shadow: 0 0 8px #0000ff; }
+            100% { color: #ff0000; text-shadow: 0 0 8px #ff0000; }
+        }
+        .rgb-admin-text {
+            animation: rgb-shimmer 4s infinite linear;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- ÜST MENÜ (NAVBAR) -->
+    <nav class="bg-[#101726] border-b border-slate-800 px-6 py-4 flex justify-between items-center shadow-lg sticky top-0 z-40">
+        <div class="flex items-center space-x-3">
+            <i class="fab fa-steam text-3xl text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]"></i>
+            <span class="text-xl font-bold tracking-wider text-white">STEAM <span class="text-emerald-400">FRIEND FINDER</span></span>
+        </div>
+        
+        <div id="nav-user-zone" class="hidden flex items-center space-x-6">
+            <!-- Bildirimler Çanı -->
+            <div class="relative cursor-pointer" onclick="toggleNotificationsMenu(event)">
+                <i class="fas fa-bell text-xl text-slate-400 hover:text-white transition"></i>
+                <span id="notification-badge" class="absolute -top-2 -right-2 bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+                
+                <!-- Bildirim Dropdown Kutusu -->
+                <div id="notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-[#141d2f] border border-slate-800 rounded-xl shadow-2xl p-4 hidden z-50" onclick="event.stopPropagation()">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
+                        <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Bildirimler</span>
+                        <button onclick="clearAllNotifications(event)" class="text-[11px] text-rose-400 hover:underline">Tümünü Sil</button>
+                    </div>
+                    <div id="notifications-list" class="max-h-60 overflow-y-auto space-y-2 text-xs text-slate-400">
+                        <p class="text-center py-4 text-slate-600">Yeni bildirim bulunmuyor.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profil Alanı -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="openProfileEdit()">
+                <img id="nav-avatar" src="" class="w-9 h-9 rounded-full object-cover border border-slate-700">
+                <span id="nav-username" class="font-medium">Kullanıcı</span>
+            </div>
+            <button onclick="logout()" class="text-sm bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 px-3 py-1.5 rounded-md border border-rose-800/50 transition">
+                <i class="fas fa-sign-out-alt mr-1"></i> Çıkış
+            </button>
+        </div>
+    </nav>
+
+    <!-- ANA İÇERİK ALANI -->
+    <main class="flex-1 container mx-auto p-4 md:p-6 max-w-6xl">
+        
+        <!-- GİRİŞ VE KAYIT EKRANI -->
+        <section id="auth-page" class="max-w-md mx-auto my-12 bg-[#101726] p-8 rounded-xl border border-slate-800 shadow-2xl">
+            <div class="flex justify-center space-x-6 mb-8 border-b border-slate-800 pb-4">
+                <button id="tab-login" onclick="toggleAuthTab('login')" class="text-lg font-semibold text-emerald-400 border-b-2 border-emerald-400 pb-2 px-2 transition">Giriş Yap</button>
+                <button id="tab-register" onclick="toggleAuthTab('register')" class="text-lg font-semibold text-slate-400 pb-2 px-2 transition">Kayıt Ol</button>
+            </div>
+
+            <!-- Giriş Formu -->
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1 font-semibold">Kullanıcı Adı</label>
+                    <input type="text" id="login-username" required class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 text-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1 font-semibold">Şifre</label>
+                    <input type="password" id="login-password" required class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 text-white transition">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg shadow-lg transition mt-2">Giriş Yap</button>
+            </form>
+
+            <!-- Kayıt Formu -->
+            <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1 font-semibold">Kullanıcı Adı</label>
+                    <input type="text" id="reg-username" required class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 text-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1 font-semibold">E-posta</label>
+                    <input type="email" id="reg-email" required class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 text-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1 font-semibold">Şifre</label>
+                    <input type="password" id="reg-password" required class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 text-white transition">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg shadow-lg transition mt-2">Kayıt Ol</button>
+            </form>
+        </section>
+
+        <!-- ANA SAYFA / ODALAR LİSTESİ -->
+        <section id="dashboard-page" class="hidden space-y-6">
+            
+            <!-- BLADEKENSEI YÖNETİM PANELİ -->
+            <div id="admin-reports-panel" class="hidden bg-[#151126] p-6 rounded-xl neon-border-admin space-y-4">
+                <div class="flex items-center justify-between border-b border-purple-900/60 pb-3">
+                    <h3 class="text-md font-bold text-purple-400 flex items-center gap-2">
+                        <i class="fas fa-shield-halved text-purple-400 animate-pulse"></i> 🛡️ BladeKensei Yönetim Paneli (Gelen Şikayetler)
+                    </h3>
+                    <span id="reports-count-badge" class="bg-purple-900 text-purple-300 text-xs px-2.5 py-0.5 rounded-full border border-purple-700">0 Aktif Rapor</span>
+                </div>
+                <div id="admin-reports-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-1"></div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-[#101726] p-6 rounded-xl border border-slate-800 gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-gamepad text-emerald-400"></i> Aktif Oyun Odaları
+                    </h2>
+                    <p class="text-sm text-slate-400 mt-1">Bir odaya katılarak takım arkadaşı bulabilir veya kendi odanı kurabilirsin.</p>
+                </div>
+                <button onclick="openModal('create-room-modal')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-lg transition">
+                    <i class="fas fa-plus"></i> Oda Oluştur
+                </button>
+            </div>
+
+            <div id="rooms-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- ODA DETAY / CHAT SAYFASI -->
+        <section id="room-detail-page" class="hidden grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-1 bg-[#101726] p-5 rounded-xl border border-slate-800 flex flex-col h-[calc(100vh-12rem)] min-h-[500px]">
+                <button onclick="showSection('dashboard-page')" class="text-slate-400 hover:text-white text-sm mb-4 flex items-center gap-2 transition">
+                    <i class="fas fa-arrow-left"></i> Odalara Geri Dön
+                </button>
+                
+                <div class="border-b border-slate-800 pb-4 mb-4">
+                    <h3 id="detail-room-name" class="text-lg font-bold text-emerald-400 truncate">Oda İsmi</h3>
+                    <p id="detail-room-desc" class="text-xs text-slate-400 mt-2 whitespace-pre-wrap line-clamp-3">Oda açıklaması...</p>
+                </div>
+
+                <div class="flex-1 flex flex-col min-h-0">
+                    <h4 class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 flex items-center justify-between">
+                        <span>Odadaki Oyuncular</span>
+                        <span id="detail-room-count" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
+                    </h4>
+                    <div id="detail-members-list" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+                </div>
+
+                <div id="room-danger-zone" class="pt-4 border-t border-slate-800 mt-4 hidden"></div>
+            </div>
+
+            <div class="lg:col-span-3 bg-[#101726] rounded-xl border border-slate-800 flex flex-col h-[calc(100vh-12rem)] min-h-[500px] overflow-hidden">
+                <div class="bg-[#141d2f] px-5 py-3.5 border-b border-slate-800 flex justify-between items-center">
+                    <div class="flex items-center gap-2 text-sm text-slate-300">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Oda Canlı Sohbet Alanı
+                    </div>
+                    <div id="admin-bypass-indicator" class="text-xs bg-purple-950/80 border border-purple-600 text-purple-300 px-2.5 py-1 rounded font-semibold hidden">
+                        <i class="fas fa-shield-alt mr-1"></i> Admin İzleme Modu Aktif (Katılmadan Yazabilirsin)
+                    </div>
+                </div>
+
+                <div id="chat-messages-box" class="flex-1 overflow-y-auto p-5 space-y-4"></div>
+
+                <form onsubmit="handleSendMessage(event)" class="p-4 bg-[#141d2f] border-t border-slate-800 flex gap-3">
+                    <input type="text" id="chat-input" placeholder="Bir şeyler yazın..." autocomplete="off" class="flex-1 bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 text-white transition text-sm">
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 rounded-lg transition shadow-md">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- PROFİL DÜZENLEME SAYFASI -->
+        <section id="profile-page" class="hidden max-w-xl mx-auto bg-[#101726] p-6 md:p-8 rounded-xl border border-slate-800 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
+                <h2 class="text-xl font-bold text-white"><i class="fas fa-user-cog text-emerald-400 mr-2"></i>Profil Ayarları</h2>
+                <button onclick="showSection('dashboard-page')" class="text-sm text-slate-400 hover:text-white transition">Vazgeç</button>
+            </div>
+            <div class="space-y-6">
+                <div class="flex flex-col sm:flex-row items-center gap-6 p-4 bg-[#0b0f19] rounded-lg border border-slate-800">
+                    <div class="relative group">
+                        <img id="profile-preview-avatar" src="" class="w-24 h-24 rounded-full object-cover border-2 border-slate-700">
+                        <label for="avatar-upload-input" class="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition text-xs text-slate-300">
+                            <i class="fas fa-camera text-lg mb-1"></i> Değiştir
+                        </label>
+                        <input type="file" id="avatar-upload-input" accept="image/*" onchange="handleAvatarUpload(event)" class="hidden">
+                    </div>
+                    <div class="text-center sm:text-left flex-1">
+                        <h4 class="font-semibold text-white">Profil Resmi Değiştir</h4>
+                        <p class="text-xs text-slate-400 mt-1">Cihazından görsel seçerek profil resmini güncelleyebilirsin.</p>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1 font-semibold">Görünen İsim (Nick)</label>
+                        <input type="text" id="profile-nick-input" class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 text-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1 font-semibold">Steam Bio / Açıklama</label>
+                        <textarea id="profile-bio-input" rows="3" placeholder="Kendinden bahset..." class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 text-white transition text-sm resize-none"></textarea>
+                    </div>
+                    <button onclick="saveProfileChanges()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg shadow-lg transition">Değişiklikleri Kaydet</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- KULLANICI DETAY POPUP MODALI -->
+    <div id="user-profile-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-200" onclick="closeUserProfileModal()">
+        <div class="bg-[#101726] border border-slate-800 rounded-xl p-6 max-w-sm w-full mx-4 relative shadow-2xl" onclick="event.stopPropagation()">
+            <button onclick="closeUserProfileModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="flex flex-col items-center text-center">
+                <img id="modal-user-avatar" src="" class="w-20 h-20 rounded-full object-cover border-2 border-emerald-500 shadow-lg mb-3">
+                <h3 id="modal-user-name" class="text-lg font-bold text-white flex items-center gap-2">Kullanıcı Adı</h3>
+                <div id="modal-user-badge" class="mt-1"></div>
+                <p id="modal-user-bio" class="text-sm text-slate-400 mt-4 bg-[#0b0f19] p-3 rounded-lg border border-slate-800/80 w-full min-h-[60px] text-left italic"></p>
+                
+                <div class="mt-5 w-full pt-4 border-t border-slate-800/80 flex gap-2">
+                    <button onclick="triggerReport()" class="w-full bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 py-2 rounded-lg text-xs font-semibold transition">
+                        <i class="fas fa-flag mr-1"></i> Kullanıcıyı Rapor Et (Şikayet)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ODA OLUŞTURMA MODALI -->
+    <div id="create-room-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-[#101726] border border-slate-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+                <h3 class="text-md font-bold text-white"><i class="fas fa-folder-plus text-emerald-400 mr-2"></i>Yeni Oda Kur</h3>
+                <button onclick="closeModal('create-room-modal')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="handleCreateRoom(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1 font-semibold">Oda İsmi</label>
+                    <input type="text" id="room-name-input" required placeholder="Örn: CS2 Global Ranked Arayanlar" class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 text-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1 font-semibold">Açıklama</label>
+                    <textarea id="room-desc-input" rows="3" required placeholder="Oda kriterlerini belirtin..." class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 text-white transition text-sm resize-none"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg shadow-lg transition mt-2">Odayı Yayınla</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT MOTORU -->
+    <script>
+        const defaultUsers = [
+            {
+                username: "BladeKensei",
+                email: "egeseramik10@gmail.com",
+                password: "AdminBladeKensei161416",
+                bio: "EgeNetwork Kurucusu & Sistem Yöneticisi.",
+                avatar: "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?w=200",
+                isAdmin: true,
+                isBanned: false
+            },
+            {
+                username: "GamerPro",
+                email: "gamer@gmail.com",
+                password: "123",
+                bio: "Steam seviyem 100! Takımlara katılırım.",
+                avatar: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=200",
+                isAdmin: false,
+                isBanned: false
+            }
+        ];
+
+        let state = {
+            currentUser: JSON.parse(localStorage.getItem('sff_currentUser')) || null,
+            users: JSON.parse(localStorage.getItem('sff_users')) || defaultUsers,
+            rooms: JSON.parse(localStorage.getItem('sff_rooms')) || [],
+            reports: JSON.parse(localStorage.getItem('sff_reports')) || [],
+            notifications: JSON.parse(localStorage.getItem('sff_notifications')) || []
+        };
+
+        function saveStateToStorage() {
+            localStorage.setItem('sff_users', JSON.stringify(state.users));
+            localStorage.setItem('sff_rooms', JSON.stringify(state.rooms));
+            localStorage.setItem('sff_reports', JSON.stringify(state.reports));
+            localStorage.setItem('sff_notifications', JSON.stringify(state.notifications));
+            if(state.currentUser) {
+                localStorage.setItem('sff_currentUser', JSON.stringify(state.currentUser));
+            } else {
+                localStorage.removeItem('sff_currentUser');
+            }
+        }
+
+        function initApp() {
+            window.addEventListener('click', () => {
+                document.getElementById('notifications-dropdown').classList.add('hidden');
+            });
+
+            // Eğer giriş yapan kullanıcı banlandıysa direkt sistemden at
+            if (state.currentUser) {
+                const actualUser = state.users.find(u => u.username === state.currentUser.username);
+                if (actualUser && actualUser.isBanned) {
+                    alert("Hesabınız yönetici tarafından engellenmiştir!");
+                    logout();
+                    return;
+                }
+                showSection('dashboard-page');
+                renderRooms();
+                renderReports();
+            } else {
+                showSection('auth-page');
+            }
+        }
+
+        // BİLDİRİM SİSTEMİ
+        function addNotification(text, targetUser = null) {
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            const newNotif = { text, time: timeStr, forUser: targetUser || 'ALL' };
+            state.notifications.unshift(newNotif);
+            saveStateToStorage();
+            updateNotificationsUI();
+        }
+
+        function updateNotificationsUI() {
+            const badge = document.getElementById('notification-badge');
+            const list = document.getElementById('notifications-list');
+            
+            if (!state.currentUser) return;
+
+            // Kullanıcının göreceği bildirimleri filtrele (Genel olanlar + Sadece ona gelenler)
+            const myNotifications = state.notifications.filter(n => n.forUser === 'ALL' || n.forUser === state.currentUser.username);
+
+            if (myNotifications.length > 0) {
+                badge.textContent = myNotifications.length;
+                badge.classList.remove('hidden');
+                
+                list.innerHTML = '';
+                myNotifications.forEach(n => {
+                    const row = document.createElement('div');
+                    row.className = "p-2 rounded bg-[#0b0f19] border border-slate-800 flex justify-between gap-2 items-start";
+                    row.innerHTML = `<span class="break-words flex-1">${n.text}</span><span class="text-[10px] text-slate-600 shrink-0 mt-0.5">${n.time}</span>`;
+                    list.appendChild(row);
+                });
+            } else {
+                badge.classList.add('hidden');
+                list.innerHTML = `<p class="text-center py-4 text-slate-600">Yeni bildirim bulunmuyor.</p>`;
+            }
+        }
+
+        function toggleNotificationsMenu(e) {
+            e.stopPropagation();
+            const drop = document.getElementById('notifications-dropdown');
+            drop.classList.toggle('hidden');
+            updateNotificationsUI();
+        }
+
+        function clearAllNotifications(e) {
+            e.stopPropagation();
+            if (state.currentUser) {
+                // Sadece kendisiyle ilgili olanları temizle
+                state.notifications = state.notifications.filter(n => n.forUser !== 'ALL' && n.forUser !== state.currentUser.username);
+                saveStateToStorage();
+                updateNotificationsUI();
+            }
+        }
+
+        function showSection(sectionId) {
+            document.getElementById('auth-page').classList.add('hidden');
+            document.getElementById('dashboard-page').classList.add('hidden');
+            document.getElementById('room-detail-page').classList.add('hidden');
+            document.getElementById('profile-page').classList.add('hidden');
+
+            document.getElementById(sectionId).classList.remove('hidden');
+            
+            const navZone = document.getElementById('nav-user-zone');
+            if (state.currentUser) {
+                navZone.classList.remove('hidden');
+                document.getElementById('nav-avatar').src = state.currentUser.avatar;
+                
+                const nameSpan = document.getElementById('nav-username');
+                nameSpan.className = "font-medium";
+                if(state.currentUser.isAdmin) {
+                    nameSpan.className = "rgb-admin-text";
+                    nameSpan.innerHTML = `<i class="fas fa-crown mr-1"></i>${state.currentUser.username}`;
+                    document.getElementById('admin-reports-panel').classList.remove('hidden');
+                } else {
+                    nameSpan.textContent = state.currentUser.username;
+                    document.getElementById('admin-reports-panel').classList.add('hidden');
+                }
+                updateNotificationsUI();
+            } else {
+                navZone.classList.add('hidden');
+            }
+        }
+
+        function toggleAuthTab(tab) {
+            if (tab === 'login') {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('tab-login').className = "text-lg font-semibold text-emerald-400 border-b-2 border-emerald-400 pb-2 px-2 transition";
+                document.getElementById('tab-register').className = "text-lg font-semibold text-slate-400 pb-2 px-2 transition";
+            } else {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('register-form').classList.remove('hidden');
+                document.getElementById('tab-login').className = "text-lg font-semibold text-slate-400 pb-2 px-2 transition";
+                document.getElementById('tab-register').className = "text-lg font-semibold text-blue-400 border-b-2 border-blue-400 pb-2 px-2 transition";
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const userInp = document.getElementById('login-username').value.trim();
+            const passInp = document.getElementById('login-password').value;
+
+            const user = state.users.find(u => u.username.toLowerCase() === userInp.toLowerCase() && u.password === passInp);
+
+            if (user) {
+                if (user.isBanned) {
+                    alert("Bu hesap topluluk kurallarını ihlal ettiği için BANLANMIŞTIR!");
+                    return;
+                }
+                state.currentUser = user;
+                saveStateToStorage();
+                showSection('dashboard-page');
+                renderRooms();
+                renderReports();
+                addNotification(`Sisteme başarıyla giriş yaptın.`, user.username);
+            } else {
+                alert("Hatalı kullanıcı adı veya şifre girdiniz!");
+            }
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const username = document.getElementById('reg-username').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+
+            if (state.users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+                alert("Bu kullanıcı adı zaten alınmış!");
+                return;
+            }
+
+            const isAdminCred = (username === "BladeKensei" && password === "AdminBladeKensei161416" && email === "egeseramik10@gmail.com");
+
+            const newUser = {
+                username: username,
+                email: email,
+                password: password,
+                bio: "Yeni Steam kullanıcısı.",
+                avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200",
+                isAdmin: isAdminCred,
+                isBanned: false
+            };
+
+            state.users.push(newUser);
+            state.currentUser = newUser;
+            saveStateToStorage();
+            showSection('dashboard-page');
+            renderRooms();
+            renderReports();
+        }
+
+        function logout() {
+            state.currentUser = null;
+            state.currentRoomId = null;
+            saveStateToStorage();
+            document.getElementById('notifications-dropdown').classList.add('hidden');
+            showSection('auth-page');
+        }
+
+        // ODALARI LİSTELEME
+        function renderRooms() {
+            const grid = document.getElementById('rooms-grid');
+            grid.innerHTML = '';
+
+            if (state.rooms.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 bg-[#101726] rounded-xl border border-slate-800 text-slate-500">
+                        <i class="fas fa-folder-open text-4xl mb-3"></i>
+                        <p class="text-sm">Şu anda aktif kurulmuş bir oyun odası bulunmuyor.</p>
+                    </div>`;
+                return;
+            }
+
+            state.rooms.forEach(room => {
+                const isCreator = state.currentUser && room.creator === state.currentUser.username;
+                const isAdmin = state.currentUser && state.currentUser.isAdmin;
+
+                const creatorUserObj = state.users.find(u => u.username === room.creator);
+                let creatorBadgeStyle = "text-slate-300 font-semibold";
+                if(creatorUserObj && creatorUserObj.isAdmin) {
+                    creatorBadgeStyle = "rgb-admin-text font-bold";
+                }
+
+                let deleteButtonHTML = '';
+                if (isCreator || isAdmin) {
+                    deleteButtonHTML = `
+                        <button onclick="deleteRoom(event, '${room.id}')" class="bg-rose-950/60 hover:bg-rose-900 text-rose-400 px-2 py-1 rounded-lg border border-rose-800/60 transition text-xs">
+                            <i class="fas fa-trash-alt"></i> Sil
+                        </button>
+                    `;
+                }
+
+                const card = document.createElement('div');
+                card.className = "bg-[#101726] rounded-xl border border-slate-800 hover:border-slate-700 transition flex flex-col justify-between overflow-hidden p-5 shadow-lg relative";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start gap-2 mb-3">
+                            <h3 class="font-bold text-white text-md tracking-wide truncate flex-1">${room.name}</h3>
+                            ${deleteButtonHTML}
+                        </div>
+                        <p class="text-xs text-slate-400 line-clamp-3 mb-4 bg-[#0b0f19] p-3 rounded-lg border border-slate-800/50">${room.description}</p>
+                    </div>
+                    <div class="flex justify-between items-center pt-3 border-t border-slate-800/80 mt-2">
+                        <div class="text-xs">
+                            <span class="text-slate-500 block">Oda Sahibi:</span>
+                            <span class="${creatorBadgeStyle}">${room.creator}</span>
+                        </div>
+                        <button onclick="enterRoom('${room.id}')" class="bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-400 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                            İncele / Katıl <i class="fas fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function handleCreateRoom(e) {
+            e.preventDefault();
+            const name = document.getElementById('room-name-input').value.trim();
+            const desc = document.getElementById('room-desc-input').value.trim();
+
+            const newRoom = {
+                id: 'room-' + Date.now(),
+                name: name,
+                description: desc,
+                creator: state.currentUser.username,
+                members: [state.currentUser.username],
+                messages: []
+            };
+
+            state.rooms.push(newRoom);
+            saveStateToStorage();
+            closeModal('create-room-modal');
+            
+            document.getElementById('room-name-input').value = '';
+            document.getElementById('room-desc-input').value = '';
+            
+            renderRooms();
+            addNotification(`"${name}" isimli yeni bir oyun odası oluşturuldu.`);
+            enterRoom(newRoom.id);
+        }
+
+        function deleteRoom(e, roomId) {
+            if(e) e.stopPropagation();
+
+            if (confirm("Bu odayı tamamen silmek istediğinize emin misiniz?")) {
+                const room = state.rooms.find(r => r.id === roomId);
+                state.rooms = state.rooms.filter(r => r.id !== roomId);
+                
+                if (state.currentRoomId === roomId) {
+                    state.currentRoomId = null;
+                    showSection('dashboard-page');
+                }
+                
+                saveStateToStorage();
+                renderRooms();
+                if(room) addNotification(`"${room.name}" odası kapatıldı/silindi.`);
+                alert("Oda başarıyla kaldırıldı.");
+            }
+        }
+
+        function enterRoom(roomId) {
+            const room = state.rooms.find(r => r.id === roomId);
+            if (!room) return;
+
+            state.currentRoomId = roomId;
+            
+            // NORMAL KULLANICIYSA VE ODADA YOKSA OTOMATİK EKLE
+            // EĞER ADMİNSE (BLADEKENSEI) ODAYA KATILMADAN GÖZ ATABİLSİN DİYE OTOMATİK EKLEMİYORUZ!
+            if (!state.currentUser.isAdmin && !room.members.includes(state.currentUser.username)) {
+                room.members.push(state.currentUser.username);
+                addNotification(`${state.currentUser.username}, "${room.name}" odasına katıldı.`);
+                saveStateToStorage();
+            }
+
+            showSection('room-detail-page');
+            updateRoomDetailView();
+        }
+
+        function updateRoomDetailView() {
+            const room = state.rooms.find(r => r.id === state.currentRoomId);
+            if (!room) return;
+
+            // Eğer giren kişi (normal kullanıcıysa) ve odadan atıldıysa dashboard'a şutla
+            if (!state.currentUser.isAdmin && !room.members.includes(state.currentUser.username)) {
+                state.currentRoomId = null;
+                showSection('dashboard-page');
+                alert("Bu odadan uzaklaştırıldınız veya oda artık üye alımına kapalı.");
+                return;
+            }
+
+            document.getElementById('detail-room-name').textContent = room.name;
+            document.getElementById('detail-room-desc').textContent = room.description;
+            document.getElementById('detail-room-count').textContent = room.members.length;
+
+            // Admin odada yoksa "İzleme Modu" yazısını göster
+            const bypassIndicator = document.getElementById('admin-bypass-indicator');
+            if (state.currentUser.isAdmin && !room.members.includes(state.currentUser.username)) {
+                bypassIndicator.classList.remove('hidden');
+            } else {
+                bypassIndicator.classList.add('hidden');
+            }
+
+            const dangerZone = document.getElementById('room-danger-zone');
+            if (room.creator === state.currentUser.username || state.currentUser.isAdmin) {
+                dangerZone.classList.remove('hidden');
+                dangerZone.innerHTML = `
+                    <button onclick="deleteRoom(null, '${room.id}')" class="w-full bg-rose-600 hover:bg-rose-500 text-white py-2 rounded-lg text-xs font-bold transition shadow-md flex items-center justify-center gap-1">
+                        <i class="fas fa-trash-alt"></i> Odayı Kapat/Sil (Yönetici)
+                    </button>
+                `;
+            } else {
+                dangerZone.classList.add('hidden');
+            }
+
+            const membersListDiv = document.getElementById('detail-members-list');
+            membersListDiv.innerHTML = '';
+
+            let memberObjects = room.members.map(mName => state.users.find(u => u.username === mName)).filter(Boolean);
+
+            memberObjects.sort((a, b) => {
+                if (a.username === room.creator) return -1;
+                if (b.username === room.creator) return 1;
+                if (a.isAdmin && !b.isAdmin) return -1;
+                if (!a.isAdmin && b.isAdmin) return 1;
+                return 0;
+            });
+
+            memberObjects.forEach(mUser => {
+                const isOwner = mUser.username === room.creator;
+                let nameClass = "text-slate-300 font-medium text-sm";
+                let badgeHTML = '';
+
+                if (isOwner) {
+                    badgeHTML += `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold">Oda Sahibi</span>`;
+                }
+                if (mUser.isAdmin) {
+                    nameClass = "rgb-admin-text font-bold text-sm";
+                    badgeHTML += `<span class="bg-purple-600/20 text-purple-400 border border-purple-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold">Admin</span>`;
+                }
+
+                let kickButtonHTML = '';
+                // CRITICAL FIX: Admin ise odadaki oda sahibini dahil HERKESİ atabilir. Oda sahibi ise sadece normal üyeleri atabilir.
+                const canKick = (state.currentUser.isAdmin && mUser.username !== state.currentUser.username) || 
+                                (state.currentUser.username === room.creator && mUser.username !== room.creator && !mUser.isAdmin);
+                
+                if (canKick) {
+                    kickButtonHTML = `
+                        <button onclick="kickUser(event, '${mUser.username}')" class="text-rose-500 hover:text-rose-400 text-xs p-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity ml-auto" title="Odadan At">
+                            <i class="fas fa-user-times text-md"></i> At
+                        </button>
+                    `;
+                }
+
+                const memberRow = document.createElement('div');
+                memberRow.className = "flex items-center gap-2.5 p-2 rounded-lg bg-[#0b0f19]/60 hover:bg-[#0b0f19] border border-slate-800/40 transition group cursor-pointer relative";
+                memberRow.onclick = () => openUserProfileModal(mUser.username);
+
+                memberRow.innerHTML = `
+                    <img src="${mUser.avatar}" class="w-8 h-8 rounded-full object-cover border border-slate-700">
+                    <div class="flex flex-col min-w-0 flex-1">
+                        <span class="${nameClass} truncate">${mUser.username}</span>
+                        <div class="flex items-center gap-1 mt-0.5">${badgeHTML}</div>
+                    </div>
+                    ${kickButtonHTML}
+                `;
+                membersListDiv.appendChild(memberRow);
+            });
+
+            renderChatMessages(room);
+        }
+
+        function kickUser(e, usernameToKick) {
+            e.stopPropagation();
+            if (confirm(`"${usernameToKick}" adlı kullanıcıyı odadan atmak istediğinize emin misiniz?`)) {
+                const room = state.rooms.find(r => r.id === state.currentRoomId);
+                if (!room) return;
+
+                room.members = room.members.filter(m => m !== usernameToKick);
+                
+                // Eğer atılan kişi oda sahibiyse ve odada başka biri varsa odayı yeni birine devret veya kapat
+                if (room.creator === usernameToKick) {
+                    if (room.members.length > 0) {
+                        room.creator = room.members[0];
+                    } else {
+                        state.rooms = state.rooms.filter(r => r.id !== room.id);
+                        state.currentRoomId = null;
+                        showSection('dashboard-page');
+                    }
+                }
+
+                addNotification(`"${usernameToKick}" yetkili tarafından odadan uzaklaştırıldı.`, usernameToKick);
+                saveStateToStorage();
+                
+                if (state.currentUser.username === usernameToKick) {
+                    state.currentRoomId = null;
+                    showSection('dashboard-page');
+                } else {
+                    updateRoomDetailView();
+                }
+            }
+        }
+
+        function renderChatMessages(room) {
+            const box = document.getElementById('chat-messages-box');
+            box.innerHTML = '';
+
+            if (room.messages.length === 0) {
+                box.innerHTML = `<div class="text-center py-8 text-slate-600 text-xs">Sohbet başlatılmamış. İlk mesajı gönderin!</div>`;
+                return;
+            }
+
+            room.messages.forEach(msg => {
+                const msgSenderObj = state.users.find(u => u.username === msg.sender);
+                const isMe = state.currentUser && msg.sender === state.currentUser.username;
+                
+                let nameStyle = "text-xs font-bold text-slate-400 mb-0.5 block";
+                if (msgSenderObj && msgSenderObj.isAdmin) {
+                    nameStyle = "rgb-admin-text text-xs mb-0.5 block";
+                }
+
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `flex gap-3 max-w-[85%] ${isMe ? 'ml-auto flex-row-reverse' : ''}`;
+                msgDiv.innerHTML = `
+                    <img src="${msgSenderObj?.avatar || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100'}" class="w-8 h-8 rounded-full object-cover mt-0.5 border border-slate-800">
+                    <div>
+                        <span class="${nameStyle}">${msg.sender} ${msgSenderObj?.isAdmin ? '<span class="text-[9px] uppercase font-bold tracking-tight bg-purple-900/40 border border-purple-700/50 px-1 rounded ml-1">Admin</span>' : ''}</span>
+                        <div class="p-3 rounded-xl text-sm ${isMe ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-[#141d2f] border border-slate-800 text-slate-200 rounded-tl-none'}">
+                            <p class="break-all whitespace-pre-wrap">${msg.text}</p>
+                            <span class="block text-[10px] text-slate-400 mt-1 text-right">${msg.time}</span>
+                        </div>
+                    </div>
+                `;
+                box.appendChild(msgDiv);
+            });
+
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function handleSendMessage(e) {
+            e.preventDefault();
+            const inp = document.getElementById('chat-input');
+            const text = inp.value.trim();
+            if (!text) return;
+
+            const room = state.rooms.find(r => r.id === state.currentRoomId);
+            if (!room) return;
+
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            room.messages.push({
+                sender: state.currentUser.username,
+                text: text,
+                time: timeStr
+            });
+            saveStateToStorage();
+            inp.value = '';
+            
+            updateRoomDetailView();
+        }
+
+        function openProfileEdit() {
+            document.getElementById('profile-nick-input').value = state.currentUser.username;
+            document.getElementById('profile-bio-input').value = state.currentUser.bio || '';
+            document.getElementById('profile-preview-avatar').src = state.currentUser.avatar;
+            showSection('profile-page');
+        }
+
+        function handleAvatarUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const base64Img = event.target.result;
+                document.getElementById('profile-preview-avatar').src = base64Img;
+                document.getElementById('profile-preview-avatar').dataset.tempSrc = base64Img;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveProfileChanges() {
+            const newNick = document.getElementById('profile-nick-input').value.trim();
+            const newBio = document.getElementById('profile-bio-input').value.trim();
+            const tempAvatar = document.getElementById('profile-preview-avatar').dataset.tempSrc;
+
+            if (!newNick) return;
+
+            if (newNick.toLowerCase() !== state.currentUser.username.toLowerCase() && 
+                state.users.some(u => u.username.toLowerCase() === newNick.toLowerCase())) {
+                alert("Bu kullanıcı adı başka biri tarafından kullanılıyor!");
+                return;
+            }
+
+            const oldNick = state.currentUser.username;
+            state.rooms.forEach(r => {
+                if (r.creator === oldNick) r.creator = newNick;
+                r.members = r.members.map(m => m === oldNick ? newNick : m);
+                r.messages.forEach(m => {
+                    if (m.sender === oldNick) m.sender = newNick;
+                });
+            });
+
+            state.currentUser.username = newNick;
+            state.currentUser.bio = newBio;
+            if (tempAvatar) state.currentUser.avatar = tempAvatar;
+
+            const idx = state.users.findIndex(u => u.email === state.currentUser.email);
+            if(idx !== -1) state.users[idx] = state.currentUser;
+
+            saveStateToStorage();
+            alert("Profiliniz başarıyla güncellendi!");
+            showSection('dashboard-page');
+            renderRooms();
+        }
+
+        function openUserProfileModal(username) {
+            const user = state.users.find(u => u.username === username);
+            if (!user) return;
+
+            document.getElementById('modal-user-avatar').src = user.avatar;
+            const nameHeader = document.getElementById('modal-user-name');
+            const badgeDiv = document.getElementById('modal-user-badge');
+            
+            nameHeader.textContent = user.username;
+            nameHeader.className = "text-lg font-bold text-white flex items-center gap-2";
+            badgeDiv.innerHTML = '';
+
+            if (user.isAdmin) {
+                nameHeader.classList.add('rgb-admin-text');
+                badgeDiv.innerHTML = `<span class="bg-purple-600/30 text-purple-400 border border-purple-500/40 text-xs font-bold px-2.5 py-0.5 rounded shadow">Yönetici</span>`;
+            } else {
+                badgeDiv.innerHTML = `<span class="bg-slate-800 text-slate-400 text-xs px-2 py-0.5 rounded">Topluluk Üyesi</span>`;
+            }
+
+            document.getElementById('modal-user-bio').textContent = user.bio || "Bu kullanıcı henüz bir biyografi eklememiş.";
+            document.getElementById('user-profile-modal').dataset.targetedUser = user.username;
+
+            const modal = document.getElementById('user-profile-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function closeUserProfileModal() {
+            const modal = document.getElementById('user-profile-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        // RAPOR ETME MEKANİZMASI
+        function triggerReport() {
+            const reportedUser = document.getElementById('user-profile-modal').dataset.targetedUser;
+            const reporterUser = state.currentUser.username;
+            
+            if (reportedUser === reporterUser) {
+                alert("Kendinizi şikayet edemezsiniz!");
+                return;
+            }
+
+            const reason = prompt(`${reportedUser} adlı kullanıcıyı şikayet etme sebebiniz nedir?`);
+            if (reason && reason.trim() !== "") {
+                const newReport = {
+                    id: 'rep-' + Date.now(),
+                    reporter: reporterUser,
+                    reported: reportedUser,
+                    reason: reason.trim(),
+                    adminReply: null
+                };
+
+                state.reports.push(newReport);
+                saveStateToStorage();
+                
+                alert(`Şikayetiniz iletildi. İnceleme sırasına alınmıştır.`);
+                closeUserProfileModal();
+                renderReports();
+            }
+        }
+
+        // ADMİN PANELİNİ LİSTELEME
+        function renderReports() {
+            const panelList = document.getElementById('admin-reports-list');
+            const countBadge = document.getElementById('reports-count-badge');
+            
+            if (!panelList) return;
+            panelList.innerHTML = '';
+            
+            countBadge.textContent = `${state.reports.length} Aktif Rapor`;
+
+            if (state.reports.length === 0) {
+                panelList.innerHTML = `
+                    <div class="col-span-full text-center py-6 text-slate-500 text-xs italic">
+                        Şu anda çözülmeyi bekleyen herhangi bir şikayet/rapor bulunmuyor. Temiz topluluk!
+                    </div>`;
+                return;
+            }
+
+            state.reports.forEach(rep => {
+                const card = document.createElement('div');
+                card.className = "bg-[#0b0f19] border border-purple-900/40 rounded-lg p-4 space-y-3 flex flex-col justify-between text-xs";
+                
+                let actionButtonsHTML = '';
+                if (rep.adminReply) {
+                    actionButtonsHTML = `
+                        <div class="mt-2 bg-purple-950/30 border border-purple-800/40 p-2 rounded text-slate-300">
+                            <span class="font-bold text-purple-400 block"><i class="fas fa-reply mr-1"></i>Senin Yanıtın:</span>
+                            <p class="italic mt-0.5">${rep.adminReply}</p>
+                        </div>
+                    `;
+                } else {
+                    actionButtonsHTML = `
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="sendAdminReply('${rep.id}')" class="flex-1 bg-purple-900 hover:bg-purple-800 text-purple-200 py-1.5 rounded font-semibold transition">
+                                <i class="fas fa-pen text-[10px] mr-1"></i> Yanıt Yaz
+                            </button>
+                            <button onclick="banUserFromReport('${rep.reported}', '${rep.id}')" class="bg-rose-900 hover:bg-rose-800 text-rose-200 px-3 py-1.5 rounded font-semibold transition" title="Kullanıcıyı Tamamen Banla">
+                                <i class="fas fa-gavel"></i> BANLA
+                            </button>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="space-y-1.5 flex-1">
+                        <div class="flex justify-between items-center text-slate-500 border-b border-slate-800 pb-1 mb-1">
+                            <span>Rapor ID: #${rep.id.split('-')[1]}</span>
+                            <button onclick="removeReport('${rep.id}')" class="text-emerald-400 hover:text-emerald-300 font-bold"><i class="fas fa-check-circle"></i> Çözüldü/Kapat</button>
+                        </div>
+                        <div><span class="text-slate-400 font-medium">Şikayet Eden:</span> <span class="text-sky-400 font-bold">${rep.reporter}</span></div>
+                        <div><span class="text-slate-400 font-medium">Şikayet Edilen:</span> <span class="text-rose-400 font-bold">${rep.reported}</span></div>
+                        <div class="bg-[#141d2f] p-2 rounded border border-slate-800 text-slate-300 mt-1">
+                            <span class="text-slate-500 font-semibold block text-[10px]">Şikayet Sebebi:</span>
+                            <p class="mt-0.5 font-medium">${rep.reason}</p>
+                        </div>
+                        ${actionButtonsHTML}
+                    </div>
+                `;
+                panelList.appendChild(card);
+            });
+        }
+
+        function sendAdminReply(reportId) {
+            const rep = state.reports.find(r => r.id === reportId);
+            if (!rep) return;
+
+            const replyText = prompt(`"${rep.reported}" hakkındaki şikayet için kararın/yanıtın nedir?`);
+            if (replyText && replyText.trim() !== "") {
+                rep.adminReply = replyText.trim();
+                
+                // CRITICAL FIX: Yanıtı yazan kişinin bildirimi şikayet eden kişiye (reporter) özel olarak gitsin
+                addNotification(`📢 Şikayetiniz Yetkili (${state.currentUser.username}) Tarafından Yanıtlandı: "${replyText.trim()}"`, rep.reporter);
+                
+                saveStateToStorage();
+                alert("Yanıtınız rapora eklendi ve şikayet sahibine bildirim olarak gönderildi.");
+                renderReports();
+            }
+        }
+
+        function banUserFromReport(usernameToBan, reportId) {
+            const target = state.users.find(u => u.username === usernameToBan);
+            if (!target) return;
+            if (target.isAdmin) { alert("Bir yöneticiyi banlayamazsınız!"); return; }
+
+            if (confirm(`"${usernameToBan}" adlı kullanıcıyı veritabanından tamamen BANLAMAK istediğinize emin misiniz? Giriş yetkisi elinden alınacak ve odaları temizlenecektir.`)) {
+                target.isBanned = true;
+
+                // Banlanan kullanıcının açtığı tüm odaları sil
+                state.rooms = state.rooms.filter(r => r.creator !== usernameToBan);
+                
+                // Mevcut odalardan bu kullanıcıyı çıkar
+                state.rooms.forEach(r => {
+                    r.members = r.members.filter(m => m !== usernameToBan);
+                });
+
+                addNotification(`🚫 "${usernameToBan}" topluluk kuralları ihlali sebebiyle BladeKensei tarafından BANLANDI!`);
+                
+                // İlgili raporu da otomatik kapat
+                state.reports = state.reports.filter(r => r.id !== reportId);
+
+                saveStateToStorage();
+                renderRooms();
+                renderReports();
+                alert(`${usernameToBan} başarıyla engellendi.`);
+            }
+        }
+
+        function removeReport(reportId) {
+            state.reports = state.reports.filter(r => r.id !== reportId);
+            saveStateToStorage();
+            renderReports();
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
